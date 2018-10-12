@@ -1,0 +1,133 @@
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+
+public class Assign01 {
+	public static void main(String[] args) {
+		FileInputStream beFile = null;
+		FileOutputStream leFile = null;
+		byte[] twoByteArray = new byte[2];
+		byte[] fourByteArray = new byte[4];
+		byte[] eightByteArray = new byte[8];
+		byte[] thirtyTwoByteArray = new byte[32];
+		
+		try {
+			beFile = new FileInputStream("EnGen.beFile");
+			System.out.println("beFile bytes to be read: " + beFile.available());
+			int totalBytes = beFile.available();
+			leFile = new FileOutputStream("EnGen.leFile");
+
+			int b;
+			int messageStart = 1;
+			while (beFile.available() > 0) {  // SWITCH TO INFINITE LOOP IT'S FASTER
+				b = beFile.read();
+				leFile.write(b);
+
+				if (totalBytes - beFile.available() == messageStart) {
+					leFile.write(beFile.read());  // write spare
+					
+					beFile.read(twoByteArray);  // read length
+					messageStart += byteArrayToInt(twoByteArray);
+					//System.out.println("Message end index: " + messageStart);
+					twoByteArray = endianSwap2(twoByteArray);  // endian swap length
+					
+					leFile.write(twoByteArray);  // write length
+					
+					beFile.read(fourByteArray);  // read seq_num
+					fourByteArray = endianSwap4(fourByteArray);  // endian swap seq_num
+					leFile.write(fourByteArray);  // write seq_num
+					
+					beFile.read(eightByteArray);  // read start_time
+					eightByteArray = endianSwap8(eightByteArray);  // endian swap start_time
+					leFile.write(eightByteArray);  // write start_time
+				
+					switch (b) {
+						case 100:
+							beFile.read(fourByteArray);  // read latitude
+							fourByteArray = endianSwap4(fourByteArray);  // endian swap latitude
+							leFile.write(fourByteArray);  // write latitude
+							
+							beFile.read(fourByteArray);  // read longitude
+							fourByteArray = endianSwap4(fourByteArray);  // endian swap longitude
+							leFile.write(fourByteArray);  // write longitude
+							
+							beFile.read(thirtyTwoByteArray);  // read operator
+							leFile.write(thirtyTwoByteArray);  // write operator
+							break;
+	
+						case 112:
+							beFile.read(fourByteArray);  // read speed
+							fourByteArray = endianSwap4(fourByteArray);  // endian swap speed
+							leFile.write(fourByteArray);  // write speed
+							
+							beFile.read(fourByteArray);  // read samples
+							fourByteArray = endianSwap4(fourByteArray);  // endian swap samples
+							leFile.write(fourByteArray);  // write samples
+							break;
+							
+						case 120:
+							beFile.read(twoByteArray);  // read error_code
+							twoByteArray = endianSwap2(twoByteArray);  // endian swap error_code
+							leFile.write(twoByteArray);  // write error_code
+							
+							beFile.read(twoByteArray);  // read component
+							twoByteArray = endianSwap2(twoByteArray);  // endian swap component
+							leFile.write(twoByteArray);  // write component
+							
+							beFile.read(fourByteArray);  // read version
+							fourByteArray = endianSwap4(fourByteArray);  // endian swap version
+							leFile.write(fourByteArray);  // write version
+							break;
+					}
+				}
+				
+			}
+			beFile.close();
+			leFile.close();
+		}
+		catch (FileNotFoundException e) {
+			System.out.println("EnGen.beFile not found.");
+		}
+		catch(IOException e) {
+			System.out.println("beFile read() error.");
+		}
+		
+	}
+	
+	public static int byteArrayToInt(byte[] bytes) {
+		
+		int val = (bytes[0] <<8 &0xFF00 | bytes[1] &0xFF);
+		return val;
+	}
+	
+	public static byte[] endianSwap2(byte[] byteArray) {
+		byte[] swappedArray = new byte[2];
+		swappedArray[0] = byteArray[1];
+		swappedArray[1] = byteArray[0];
+		return swappedArray;
+	}
+	
+	public static byte[] endianSwap4(byte[] byteArray) {
+		byte[] swappedArray = new byte[4];
+		swappedArray[0] = byteArray[3];
+		swappedArray[1] = byteArray[2];
+		swappedArray[2] = byteArray[1];
+		swappedArray[3] = byteArray[0];
+		return swappedArray;
+	}
+
+	public static byte[] endianSwap8(byte[] byteArray) {
+		byte[] swappedArray = new byte[8];
+		swappedArray[0] = byteArray[7];
+		swappedArray[1] = byteArray[6];
+		swappedArray[2] = byteArray[5];
+		swappedArray[3] = byteArray[4];
+		swappedArray[4] = byteArray[3];
+		swappedArray[5] = byteArray[2];
+		swappedArray[6] = byteArray[1];
+		swappedArray[7] = byteArray[0];
+		return swappedArray;
+	}
+}
